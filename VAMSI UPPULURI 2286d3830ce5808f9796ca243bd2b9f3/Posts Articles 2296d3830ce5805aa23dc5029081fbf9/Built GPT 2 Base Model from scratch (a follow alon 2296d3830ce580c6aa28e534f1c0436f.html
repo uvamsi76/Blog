@@ -1,0 +1,681 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Built GPT 2 Base Model from scratch (a follow along of Andrej Karpathy video)</title><style>
+/* cspell:disable-file */
+/* webkit printing magic: print all background colors */
+html {
+	-webkit-print-color-adjust: exact;
+}
+* {
+	box-sizing: border-box;
+	-webkit-print-color-adjust: exact;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+@media only screen {
+	body {
+		margin: 2em auto;
+		max-width: 900px;
+		color: rgb(55, 53, 47);
+	}
+}
+
+body {
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+a,
+a.visited {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.pdf-relative-link-path {
+	font-size: 80%;
+	color: #444;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+	font-weight: 600;
+	margin-bottom: 0;
+}
+
+.page-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 0.75em;
+}
+
+h1 {
+	font-size: 1.875rem;
+	margin-top: 1.875rem;
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 1.5rem;
+}
+
+h3 {
+	font-size: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+.source {
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 1.5em;
+	word-break: break-all;
+}
+
+.callout {
+	border-radius: 3px;
+	padding: 1rem;
+}
+
+figure {
+	margin: 1.25em 0;
+	page-break-inside: avoid;
+}
+
+figcaption {
+	opacity: 0.5;
+	font-size: 85%;
+	margin-top: 0.5em;
+}
+
+mark {
+	background-color: transparent;
+}
+
+.indented {
+	padding-left: 1.5em;
+}
+
+hr {
+	background: transparent;
+	display: block;
+	width: 100%;
+	height: 1px;
+	visibility: visible;
+	border: none;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+img {
+	max-width: 100%;
+}
+
+@media only print {
+	img {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+}
+
+@page {
+	margin: 1in;
+}
+
+.collection-content {
+	font-size: 0.875rem;
+}
+
+.column-list {
+	display: flex;
+	justify-content: space-between;
+}
+
+.column {
+	padding: 0 1em;
+}
+
+.column:first-child {
+	padding-left: 0;
+}
+
+.column:last-child {
+	padding-right: 0;
+}
+
+.table_of_contents-item {
+	display: block;
+	font-size: 0.875rem;
+	line-height: 1.3;
+	padding: 0.125rem;
+}
+
+.table_of_contents-indent-1 {
+	margin-left: 1.5rem;
+}
+
+.table_of_contents-indent-2 {
+	margin-left: 3rem;
+}
+
+.table_of_contents-indent-3 {
+	margin-left: 4.5rem;
+}
+
+.table_of_contents-link {
+	text-decoration: none;
+	opacity: 0.7;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+}
+
+table,
+th,
+td {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+	border-collapse: collapse;
+}
+
+table {
+	border-left: none;
+	border-right: none;
+}
+
+th,
+td {
+	font-weight: normal;
+	padding: 0.25em 0.5em;
+	line-height: 1.5;
+	min-height: 1.5em;
+	text-align: left;
+}
+
+th {
+	color: rgba(55, 53, 47, 0.6);
+}
+
+ol,
+ul {
+	margin: 0;
+	margin-block-start: 0.6em;
+	margin-block-end: 0.6em;
+}
+
+li > ol:first-child,
+li > ul:first-child {
+	margin-block-start: 0.6em;
+}
+
+ul > li {
+	list-style: disc;
+}
+
+ul.to-do-list {
+	padding-inline-start: 0;
+}
+
+ul.to-do-list > li {
+	list-style: none;
+}
+
+.to-do-children-checked {
+	text-decoration: line-through;
+	opacity: 0.375;
+}
+
+ul.toggle > li {
+	list-style: none;
+}
+
+ul {
+	padding-inline-start: 1.7em;
+}
+
+ul > li {
+	padding-left: 0.1em;
+}
+
+ol {
+	padding-inline-start: 1.6em;
+}
+
+ol > li {
+	padding-left: 0.2em;
+}
+
+.mono ol {
+	padding-inline-start: 2em;
+}
+
+.mono ol > li {
+	text-indent: -0.4em;
+}
+
+.toggle {
+	padding-inline-start: 0em;
+	list-style-type: none;
+}
+
+/* Indent toggle children */
+.toggle > li > details {
+	padding-left: 1.7em;
+}
+
+.toggle > li > details > summary {
+	margin-left: -1.1em;
+}
+
+.selected-value {
+	display: inline-block;
+	padding: 0 0.5em;
+	background: rgba(206, 205, 202, 0.5);
+	border-radius: 3px;
+	margin-right: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
+	white-space: nowrap;
+}
+
+.collection-title {
+	display: inline-block;
+	margin-right: 1em;
+}
+
+.page-description {
+	margin-bottom: 2em;
+}
+
+.simple-table {
+	margin-top: 1em;
+	font-size: 0.875rem;
+	empty-cells: show;
+}
+.simple-table td {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table th {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table-header-color {
+	background: rgb(247, 246, 243);
+	color: black;
+}
+.simple-table-header {
+	font-weight: 500;
+}
+
+time {
+	opacity: 0.5;
+}
+
+.icon {
+	display: inline-block;
+	max-width: 1.2em;
+	max-height: 1.2em;
+	text-decoration: none;
+	vertical-align: text-bottom;
+	margin-right: 0.5em;
+}
+
+img.icon {
+	border-radius: 3px;
+}
+
+.user-icon {
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	margin-right: 0.5rem;
+}
+
+.user-icon-inner {
+	font-size: 0.8em;
+}
+
+.text-icon {
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.page-cover-image {
+	display: block;
+	object-fit: cover;
+	width: 100%;
+	max-height: 30vh;
+}
+
+.page-header-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.page-header-icon-with-cover {
+	margin-top: -0.72em;
+	margin-left: 0.07em;
+}
+
+.page-header-icon img {
+	border-radius: 3px;
+}
+
+.link-to-page {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	font-weight: 500;
+}
+
+p > .user {
+	opacity: 0.5;
+}
+
+td > .user,
+td > time {
+	white-space: nowrap;
+}
+
+input[type="checkbox"] {
+	transform: scale(1.5);
+	margin-right: 0.6em;
+	vertical-align: middle;
+}
+
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.image {
+	border: none;
+	margin: 1.5em 0;
+	padding: 0;
+	border-radius: 0;
+	text-align: center;
+}
+
+.code,
+code {
+	background: rgba(135, 131, 120, 0.15);
+	border-radius: 3px;
+	padding: 0.2em 0.4em;
+	border-radius: 3px;
+	font-size: 85%;
+	tab-size: 2;
+}
+
+code {
+	color: #eb5757;
+}
+
+.code {
+	padding: 1.5em 1em;
+}
+
+.code-wrap {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.code > code {
+	background: none;
+	padding: 0;
+	font-size: 100%;
+	color: inherit;
+}
+
+blockquote {
+	font-size: 1.25em;
+	margin: 1em 0;
+	padding-left: 1em;
+	border-left: 3px solid rgb(55, 53, 47);
+}
+
+.bookmark {
+	text-decoration: none;
+	max-height: 8em;
+	padding: 0;
+	display: flex;
+	width: 100%;
+	align-items: stretch;
+}
+
+.bookmark-title {
+	font-size: 0.85em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 1.75em;
+	white-space: nowrap;
+}
+
+.bookmark-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.bookmark-info {
+	flex: 4 1 180px;
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.bookmark-image {
+	width: 33%;
+	flex: 1 1 180px;
+	display: block;
+	position: relative;
+	object-fit: cover;
+	border-radius: 1px;
+}
+
+.bookmark-description {
+	color: rgba(55, 53, 47, 0.6);
+	font-size: 0.75em;
+	overflow: hidden;
+	max-height: 4.5em;
+	word-break: break-word;
+}
+
+.bookmark-href {
+	font-size: 0.75em;
+	margin-top: 0.25em;
+}
+
+.sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+.code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+.serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+.mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+.pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+.pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+.pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+.pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+.pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+.pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+.pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+.pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+.pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.highlight-default {
+	color: rgba(50, 48, 44, 1);
+}
+.highlight-gray {
+	color: rgba(115, 114, 110, 1);
+	fill: rgba(115, 114, 110, 1);
+}
+.highlight-brown {
+	color: rgba(159, 107, 83, 1);
+	fill: rgba(159, 107, 83, 1);
+}
+.highlight-orange {
+	color: rgba(217, 115, 13, 1);
+	fill: rgba(217, 115, 13, 1);
+}
+.highlight-yellow {
+	color: rgba(203, 145, 47, 1);
+	fill: rgba(203, 145, 47, 1);
+}
+.highlight-teal {
+	color: rgba(68, 131, 97, 1);
+	fill: rgba(68, 131, 97, 1);
+}
+.highlight-blue {
+	color: rgba(51, 126, 169, 1);
+	fill: rgba(51, 126, 169, 1);
+}
+.highlight-purple {
+	color: rgba(144, 101, 176, 1);
+	fill: rgba(144, 101, 176, 1);
+}
+.highlight-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.highlight-red {
+	color: rgba(205, 60, 58, 1);
+	fill: rgba(205, 60, 58, 1);
+}
+.highlight-default_background {
+	color: rgba(50, 48, 44, 1);
+}
+.highlight-gray_background {
+	background: rgba(248, 248, 247, 1);
+}
+.highlight-brown_background {
+	background: rgba(244, 238, 238, 1);
+}
+.highlight-orange_background {
+	background: rgba(251, 236, 221, 1);
+}
+.highlight-yellow_background {
+	background: rgba(251, 243, 219, 1);
+}
+.highlight-teal_background {
+	background: rgba(237, 243, 236, 1);
+}
+.highlight-blue_background {
+	background: rgba(231, 243, 248, 1);
+}
+.highlight-purple_background {
+	background: rgba(248, 243, 252, 1);
+}
+.highlight-pink_background {
+	background: rgba(252, 241, 246, 1);
+}
+.highlight-red_background {
+	background: rgba(253, 235, 236, 1);
+}
+.block-color-default {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray {
+	color: rgba(115, 114, 110, 1);
+	fill: rgba(115, 114, 110, 1);
+}
+.block-color-brown {
+	color: rgba(159, 107, 83, 1);
+	fill: rgba(159, 107, 83, 1);
+}
+.block-color-orange {
+	color: rgba(217, 115, 13, 1);
+	fill: rgba(217, 115, 13, 1);
+}
+.block-color-yellow {
+	color: rgba(203, 145, 47, 1);
+	fill: rgba(203, 145, 47, 1);
+}
+.block-color-teal {
+	color: rgba(68, 131, 97, 1);
+	fill: rgba(68, 131, 97, 1);
+}
+.block-color-blue {
+	color: rgba(51, 126, 169, 1);
+	fill: rgba(51, 126, 169, 1);
+}
+.block-color-purple {
+	color: rgba(144, 101, 176, 1);
+	fill: rgba(144, 101, 176, 1);
+}
+.block-color-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.block-color-red {
+	color: rgba(205, 60, 58, 1);
+	fill: rgba(205, 60, 58, 1);
+}
+.block-color-default_background {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray_background {
+	background: rgba(248, 248, 247, 1);
+}
+.block-color-brown_background {
+	background: rgba(244, 238, 238, 1);
+}
+.block-color-orange_background {
+	background: rgba(251, 236, 221, 1);
+}
+.block-color-yellow_background {
+	background: rgba(251, 243, 219, 1);
+}
+.block-color-teal_background {
+	background: rgba(237, 243, 236, 1);
+}
+.block-color-blue_background {
+	background: rgba(231, 243, 248, 1);
+}
+.block-color-purple_background {
+	background: rgba(248, 243, 252, 1);
+}
+.block-color-pink_background {
+	background: rgba(252, 241, 246, 1);
+}
+.block-color-red_background {
+	background: rgba(253, 235, 236, 1);
+}
+.select-value-color-default { background-color: rgba(84, 72, 49, 0.08); }
+.select-value-color-gray { background-color: rgba(84, 72, 49, 0.15); }
+.select-value-color-brown { background-color: rgba(210, 162, 141, 0.35); }
+.select-value-color-orange { background-color: rgba(224, 124, 57, 0.27); }
+.select-value-color-yellow { background-color: rgba(236, 191, 66, 0.39); }
+.select-value-color-green { background-color: rgba(123, 183, 129, 0.27); }
+.select-value-color-blue { background-color: rgba(93, 165, 206, 0.27); }
+.select-value-color-purple { background-color: rgba(168, 129, 197, 0.27); }
+.select-value-color-pink { background-color: rgba(225, 136, 179, 0.27); }
+.select-value-color-red { background-color: rgba(244, 171, 159, 0.4); }
+
+.checkbox {
+	display: inline-flex;
+	vertical-align: text-bottom;
+	width: 16;
+	height: 16;
+	background-size: 16px;
+	margin-left: 2px;
+	margin-right: 5px;
+}
+
+.checkbox-on {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+
+.checkbox-off {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+	
+</style></head><body><article id="2296d383-0ce5-80c6-aa28-e534f1c0436f" class="page sans"><header><div class="page-header-icon undefined"><span class="icon">🌐</span></div><h1 class="page-title"><a href="https://www.linkedin.com/pulse/i-implemented-gpt-2-124m-base-model-from-scratch-using-vamsi-uppuluri-domnc/?trackingId=kO%2B6Z5JPCFdCi%2BYuffAw2w%3D%3D">Built GPT 2 Base Model from scratch (a follow along of Andrej Karpathy video)</a></h1><p class="page-description"></p></header><div class="page-body"><p id="2296d383-0ce5-803a-83f4-d53384c403e4" class="">I have recently implemented the GPT-2 124M parameter model using PyTorch. I used this project to learn more about the training process of an LLM by implementing GPT-2 and training it from scratch, which was part of Andrej Karpathy sir&#x27;s <strong>Zero to Hero</strong> series on YouTube. The video I referred to was titled <strong>&quot;</strong><a href="https://youtu.be/l8pRSuU81PU?si=Z8Mn0UZim_laAJWP">Let&#x27;s reproduce GPT-2 (124M)</a><strong>&quot;</strong>.</p><p id="2296d383-0ce5-80f7-b8a2-ce9f69cdba04" class="">For all who are curious about my learning journey, I have added incremental Git commits based on what I learned in each iteration in this <strong>GitHub repository</strong> (<a href="https://github.com/uvamsi76/practice_nanogpt">Github_repo</a>). For those interested, I have also uploaded the trained model weights to this <strong>Hugging Face repository</strong> ( <a href="https://huggingface.co/uvamsi76/gpt-2_repro/">Model</a> ).</p><p id="2296d383-0ce5-8084-bcfa-f00f448703b1" class="">If you feel this is too long and would like me to walk you through it, please let me know in the comments or send me a DM. We can plan a call or a YT live , or something similar.</p><h1 id="2296d383-0ce5-80aa-85ad-d21c0596cdc7" class="">Model settings, training process and other info</h1><p id="2296d383-0ce5-80e1-86c9-c64362d63f4e" class="">I have trained it for 1 epoch which is (10B tokens of fineweb edu dataset&#x27;s sample10B ) , 19073 steps. I have followed the exact hyperparameters mentioned in the karpathy&#x27;s nanogpt which inturn is from gpt-3 paper. I have used 3 A100s of 40GB of vram each and trained the model for almost 6 hours to complete 1 epoch .I have acheived val loss of 4.2 from 10.9 in 1 epoch. I have also used hellswag eval (which this model is performing terribly) which is giving me approx 25% . I have rented GPUs from <a href="https://jarvislabs.ai/">jarvis labs</a> ( <a href="https://www.linkedin.com/company/jarvislabsai/">JarvisLabs.ai</a> ) which costed me around 2700 approx ( 4500 approx if i include the time i spent on learning distributed model training with multiple gpus :/ ). I also have saved the model&#x27;s state_dict for every 50 steps ( which is too much of data (179GB) i feel). I did this to visualize the transformer&#x27;s learning process especially the attention layer&#x27;s process. It will take time for me to visualize those and understand them in depth.</p><h1 id="2296d383-0ce5-80fc-9849-e9b5beb987a3" class="">Summary of Flow of things that I did from the beginning</h1><ul id="2296d383-0ce5-8061-b411-c18626a79f58" class="bulleted-list"><li style="list-style-type:disc">For someone who has watched karpathy&#x27;s video this part will feel like a rewind.</li></ul><ul id="2296d383-0ce5-80bc-b039-f1f0704506b2" class="bulleted-list"><li style="list-style-type:disc">Started off by checking out huggingface&#x27;s gpt2 model and loaded it with the pretrained weights that are released by OpenAI and performed some text generations and played with model a bit.</li></ul><ul id="2296d383-0ce5-80ab-b14d-ca863121285d" class="bulleted-list"><li style="list-style-type:disc">Initial Idea was to replicate the same way as huggingface implemented it and train it so that we will be able to load it in the hf model and compare. (But this was not acheived though).</li></ul><ul id="2296d383-0ce5-80e2-81e7-cf30cd9982da" class="bulleted-list"><li style="list-style-type:disc"><strong>Had written GPT module using pytorch&#x27;s nn.module. Had written this similar to hf implementation of GPT2 by taking config which contains hyperparams and given the same name to model parameters.</strong></li></ul><ul id="2296d383-0ce5-802c-b739-fd6715cb7f75" class="bulleted-list"><li style="list-style-type:disc"><strong>Implemented the simple training loop of 50 steps and were training on the tiny shakesphere dataset. And also added some code to see how much time it is taking for each step and how many tokens are being processed each step.</strong></li></ul><ul id="2296d383-0ce5-809c-9002-c4be94eedfb5" class="bulleted-list"><li style="list-style-type:disc"><strong>Did some minute changes to the naive model that has been written by tying weights of token embeddings and the lmhead (final layer of transformer), adding scaling factor to residual pathways .</strong></li></ul><ul id="2296d383-0ce5-8000-981e-d13dc0f7cede" class="bulleted-list"><li style="list-style-type:disc"><strong>Started off with GPU gymnastics to improve performance :</strong></li></ul><ul id="2296d383-0ce5-80cb-b0c8-f7b6105669c3" class="bulleted-list"><li style="list-style-type:disc">Converted the tensors which will by default use float32/64 to use <a href="http://torch.tf/">torch.tf</a>32. TF32 is basically mantissa cutdown float number. We will loose some precision but this will improve speed of computation by a lot as there will be less bits to process.And we can take this as we are calculating some kind of scientific data where mantissa matters alot.(Think of mantissa as the part after . in a float number ex: .5234 in 12.5234 in simple words )</li></ul><ul id="2296d383-0ce5-8038-8321-d826ff0d931d" class="bulleted-list"><li style="list-style-type:disc">* To give a perspective this improved time taken per step from 1100ms -----&gt; 400ms</li></ul><ul id="2296d383-0ce5-809e-b141-c9f2a38d7702" class="bulleted-list"><li style="list-style-type:disc">Converted from tf32 to bfloat16. This is similar but we cut down more mantissa. This will give us some not so precise but close results with a bit more faster compute speed.</li></ul><ul id="2296d383-0ce5-8057-82ca-e7f4ac68901e" class="bulleted-list"><li style="list-style-type:disc">After this 1step jumped from 400ms -----&gt; 340ms</li></ul><ul id="2296d383-0ce5-80e3-a041-fc6efe98d84b" class="bulleted-list"><li style="list-style-type:disc">Added torch.compile. Up until now our python interpreter does all the computation sequentially line by line. This causes many roundtrips from memory to GPU which can be optimised as we know what will be the next processes to perform,. The same thing is acheived using torch.compile(model). This will compile the whole model to run GPU efficiently with minimal round trips</li></ul><ul id="2296d383-0ce5-8051-a1d5-f59eebd61c1a" class="bulleted-list"><li style="list-style-type:disc">1 step jumped from 340ms ---&gt; 150ms</li></ul><ul id="2296d383-0ce5-802e-9501-db170001a59a" class="bulleted-list"><li style="list-style-type:disc">Replaced masked attention that we implemented with Flash Attention instead. Flash Attention was the algorithmic improved implementation of attention mechanism as It was proposed keeping parallel computing and GPUs in mind.</li></ul><ul id="2296d383-0ce5-80a3-a4d0-e5861d7764ae" class="bulleted-list"><li style="list-style-type:disc">1 step jumped from 150ms ---&gt; 107ms</li></ul><ul id="2296d383-0ce5-80a2-afd6-e8ab543bc4e0" class="bulleted-list"><li style="list-style-type:disc">Did some number Gymnastics by converting the numbers we can to closest 2 powers as this takes less time to process inside gpus.This is the reason why now our model is different from Hugging face. We changed the vocab_size as well from 50257 to 524288 (2**19).</li></ul><ul id="2296d383-0ce5-8000-9596-d14e650ff8cd" class="bulleted-list"><li style="list-style-type:disc">1 step jumped from 107ms ---&gt; 100ms</li></ul><ul id="2296d383-0ce5-8083-aca9-db223e6dd1fd" class="bulleted-list"><li style="list-style-type:disc">After some number gymnastics we added some hyper params according to GPT-3 paper like adding beta and eps to adamw optimiser. We also introduced gradient clipping as this will normalise and prevent training from any extreme outliers in our data.</li></ul><ul id="2296d383-0ce5-80e6-bafa-cfffc406d58f" class="bulleted-list"><li style="list-style-type:disc">Added cosine learning rate decay to match with GPT-3 implementation. And also implemented fused adamw optimisation which is GPU friendly method of performing AdamW.</li></ul><ul id="2296d383-0ce5-80e1-8b88-d13d761cdf36" class="bulleted-list"><li style="list-style-type:disc">Also Added L2 regularization in the form of weight decay. And also changed the dataset from tiny shakesphere to fineweb-edu sample 10BT, which has 10B tokens approximately. We have downloaded it, divided into 100 shards and loaded into the training process. (Long story short)</li></ul><ul id="2296d383-0ce5-8003-831d-fceb29de7d02" class="bulleted-list"><li style="list-style-type:disc">GPT-3 Implemented 0.5M tokens per step of training. we cannot do that with these minute GPU&#x27;s all at once, so we implemented gradiant accumulation instead. Long story short Instead of performing optimization for 0.5M batches parallelly we do some mini_batch parallelly say 32 and we iterate some &#x27;x&#x27; amount of times so that all the 0.5M tokens gets processed in a loop. In this process all the gradients will be accumulated. we perform normalization and perform optimization step now on accumulated gradient.</li></ul><ul id="2296d383-0ce5-801d-a8cd-d4959e4ea46c" class="bulleted-list"><li style="list-style-type:disc"><strong>Now Comes the parallellization process. We did everything that we did up until now in a single GPU. But lets say you want to parallelly train on multiple GPUs at once. This can be acheived by using pytorch&#x27;s DDP (Distributed Data Parallel).</strong></li></ul><ul id="2296d383-0ce5-8076-b047-fd6effdc5f63" class="bulleted-list"><li style="list-style-type:disc">But where will we use multiple GPUs is the valid question to have.</li></ul><ul id="2296d383-0ce5-80db-ad65-f004a78cc172" class="bulleted-list"><li style="list-style-type:disc">Basically we are doing gradient accumulation any way. What if we do gradient accumulation in multiple GPUs and do optimization by combining the gradients from all gpus.</li></ul><ul id="2296d383-0ce5-80de-90a7-f0681388551b" class="bulleted-list"><li style="list-style-type:disc">This is what essentially we are doing. we perform forward pass and backward pass in the individual gpus inside the grad accum loop. Once we are about to get out of the loop we are synchronising gradients along all the GPUs and performing optimization.</li></ul><ul id="2296d383-0ce5-8093-8422-e696444cea22" class="bulleted-list"><li style="list-style-type:disc">DDP allows us to all of this. But instead of us running using python we use torchrun</li></ul><ul id="2296d383-0ce5-8017-bc8a-e5bc626a83a4" class="bulleted-list"><li style="list-style-type:disc">Have used Hellaswag eval to evaluate our language modelling capability of our model.</li></ul><ul id="2296d383-0ce5-802f-a4ad-f32cb578a96c" class="bulleted-list"><li style="list-style-type:disc">After Checking if everything is in place, wanted to start the legit pre-training of the mdoel. I wanted to do that using 8 H100 GPUs that were available in jarvislabs. But at the end performed traing in 3 A100s (As all other A100s are busy :/ )</li></ul><ul id="2296d383-0ce5-8053-8390-f44ea0ba1295" class="bulleted-list"><li style="list-style-type:disc">I could not perform in H100 even though they were free because for some reason jarvis labs has no feature to mount additional persistant storage to H100s (I assume they are running H100s seperately from the cluster as they are providing VM service with H100). And I wanted to store the statedicts in a persistand storage (which is of size 180GB approx ). and also wanted to download and process fine-web dataset once and store shards (20GB) in a persistant way.</li></ul><h1 id="2296d383-0ce5-80c2-a71b-c1f4ab2e69fa" class="">How did I use GPUs ? :</h1><ul id="2296d383-0ce5-8009-a695-f7bbfdc95c02" class="bulleted-list"><li style="list-style-type:disc">I checked out some instances from jarvislabs which lets us ssh into the machine.</li></ul><ul id="2296d383-0ce5-805d-898d-e94f7720872d" class="bulleted-list"><li style="list-style-type:disc">I sshed into machines , cloned the repo there , played with the model and learned new things and logged off and deleted the instance i created.</li></ul><ul id="2296d383-0ce5-80d3-a4be-dbcf2550abcd" class="bulleted-list"><li style="list-style-type:disc">I have also checked out multiple GPU machines to see their performance.</li></ul><ul id="2296d383-0ce5-80c6-a99b-f1e9df022a65" class="bulleted-list"><li style="list-style-type:disc">The powerful machine jarvislabs have is H100. To give a perspective The optimal time to run a single step for A100 was 100ms . H100 completed same process with the same setting within 50ms. It is almost 2x faster. If I have trained the model using 3 H100s instead of 3 A100s it would have completed training in 3 hrs instead of taking 6hrs per epoch. Of cource the price is also high for H100s. If you dont mind the longer time to train I feel the cost will be almost same for training with a H100 and training with a A100. with an extra benifit of being able to attch persistant storage to A100s. I have also tested some other GPUs like A6000. to give a perspective The setting i trained with right now took 3s per Gpu for A100 and 7s per Gpu for A6000.</li></ul><ul id="2296d383-0ce5-807a-ae66-f7353d6eebf1" class="bulleted-list"><li style="list-style-type:disc">To summarize the way I did things was To checkout not so powerful GPU but many cpus instance to download dataset and saved shards in the persistant storage mount that I attached to instance Used The same persistant storage and attched it to Test multiple GPUs and Finally train on a GPU I have Fixed (3 x A100) Saved the statedict after every 50 steps and stored them in persistand storage. and finally once training was over stored the trained model weights in the different dir of the same persisted storage. Incase anyone wants to play around with the model and the weights here you go <a href="https://huggingface.co/uvamsi76/gpt-2_repro/">Weights</a>.</li></ul><h1 id="2296d383-0ce5-8081-9cce-cdfcddfde424" class="">My Thoughts, Resolutions and Plans maybe:</h1><ol type="1" id="2296d383-0ce5-80f6-b79c-f52403e4d7a4" class="numbered-list" start="1"><li>I am not super impressed by the model I got and also I wont blame it as it was just trained on one epoch. This is mostly like a learning project for me rather than a production grade product. Even though I wanted to run it for more epochs ( I truly want to ), The cost was too much for me to run it I feel. I will take this experience, learn more from the saved dict, If I feel like I have to train more or want to play around with it again , I will burn my cash again.</li></ol><ol type="1" id="2296d383-0ce5-8068-92e4-f0b9267f87b2" class="numbered-list" start="2"><li>Having said that I will not recommend doing this If your only goal is to make a language model, cause there are much better opensource models with better trained weights that you can download and run, and Build RAG arch on top of them. But If you are a crazy guy like me who wants to experiment , visualize the process and wanting to mess architecture and play with it Go for it it is super fun.</li></ol><ol type="1" id="2296d383-0ce5-8085-8274-d03b688f4c0a" class="numbered-list" start="3"><li>I am also wondering what all other usecases this can be trained on. I mean It would be cool to see it as a forecasting model or some other thing . I have some ideas that I want to test with transformers and Transformers based LLM architectures.</li></ol><ol type="1" id="2296d383-0ce5-8051-8fe4-d6f65bd5292b" class="numbered-list" start="4"><li>I am also introduced to the beautiful world of hugging face and I just can feel I am going to use it extensively. It would be super cool If I get to work in this direction on my full time job.</li></ol><p id="2296d383-0ce5-80cc-8781-f4dd3532c32c" class="">
+</p></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>
